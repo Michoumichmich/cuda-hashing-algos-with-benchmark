@@ -1,3 +1,8 @@
+
+# What's new here
+Funtamentally the same library, but with a common interface for the hashing functions and `make run` which bennchmarks all the hashes.:
+
+
 # CUDA Hashing Algorithms Collection
 #### Author: Matt Zweil & The Mochimo Core Contributor Team
 
