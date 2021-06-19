@@ -18,10 +18,10 @@
 #include <memory.h>
 #include <device_launch_parameters.h>
 #include <cuda_runtime.h>
-extern "C" {
+
 #include "md2.cuh"
-}
-#define MD2_BLOCK_SIZE 16
+
+
 /**************************** STRUCT ********************************/
 typedef struct {
 	BYTE data[16];
@@ -133,8 +133,8 @@ __global__ void kernel_md2_hash(BYTE* indata, WORD inlen, BYTE* outdata, WORD n_
 	cuda_md2_update(&ctx, in, inlen);
 	cuda_md2_final(&ctx, out);
 }
-extern "C" {
-void mcm_cuda_md2_hash_batch(BYTE *in, WORD inlen, BYTE *out, WORD n_batch) {
+
+void mcm_cuda_md2_hash_batch(BYTE *in, WORD inlen, BYTE *out, WORD n_batch, WORD n_iter) {
 	BYTE *cuda_indata;
 	BYTE *cuda_outdata;
 	cudaMalloc(&cuda_indata, inlen * n_batch);
@@ -144,7 +144,9 @@ void mcm_cuda_md2_hash_batch(BYTE *in, WORD inlen, BYTE *out, WORD n_batch) {
 	WORD thread = 256;
 	WORD block = (n_batch + thread - 1) / thread;
 
-	kernel_md2_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch);
+	for(int i = 0 ; i < n_iter ; ++i)
+		kernel_md2_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch);
+
 	cudaMemcpy(out, cuda_outdata, MD2_BLOCK_SIZE * n_batch, cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
 	cudaError_t error = cudaGetLastError();
@@ -153,5 +155,4 @@ void mcm_cuda_md2_hash_batch(BYTE *in, WORD inlen, BYTE *out, WORD n_batch) {
 	}
 	cudaFree(cuda_indata);
 	cudaFree(cuda_outdata);
-}
 }

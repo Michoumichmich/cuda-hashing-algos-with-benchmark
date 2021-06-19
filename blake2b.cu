@@ -9,16 +9,10 @@
 
 
 #include <assert.h>
-extern "C"
-{
+
 #include "blake2b.cuh"
-}
-#define BLAKE2B_ROUNDS 12
-#define BLAKE2B_BLOCK_LENGTH 128
-#define BLAKE2B_CHAIN_SIZE 8
-#define BLAKE2B_CHAIN_LENGTH (BLAKE2B_CHAIN_SIZE * sizeof(int64_t))
-#define BLAKE2B_STATE_SIZE 16
-#define BLAKE2B_STATE_LENGTH (BLAKE2B_STATE_SIZE * sizeof(int64_t))
+
+
 extern "C"
 {
 typedef struct {
@@ -266,9 +260,9 @@ __global__ void kernel_blake2b_hash(BYTE* indata, WORD inlen, BYTE* outdata, WOR
     cuda_blake2b_update(&ctx, in, inlen);
     cuda_blake2b_final(&ctx, out);
 }
-extern "C"
-{
-void mcm_cuda_blake2b_hash_batch(BYTE *key, WORD keylen, BYTE *in, WORD inlen, BYTE *out, WORD n_outbit, WORD n_batch) {
+
+
+void mcm_cuda_blake2b_hash_batch(BYTE *key, WORD keylen, BYTE *in, WORD inlen, BYTE *out, WORD n_outbit, WORD n_batch, WORD n_iter) {
     BYTE * cuda_indata;
     BYTE * cuda_outdata;
     const WORD BLAKE2B_BLOCK_SIZE = (n_outbit >> 3);
@@ -285,7 +279,9 @@ void mcm_cuda_blake2b_hash_batch(BYTE *key, WORD keylen, BYTE *in, WORD inlen, B
     WORD thread = 256;
     WORD block = (n_batch + thread - 1) / thread;
 
-    kernel_blake2b_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch, BLAKE2B_BLOCK_SIZE);
+    for(int i = 0 ; i < n_iter ; ++i)
+        kernel_blake2b_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch, BLAKE2B_BLOCK_SIZE);
+    
     cudaMemcpy(out, cuda_outdata, BLAKE2B_BLOCK_SIZE * n_batch, cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     cudaError_t error = cudaGetLastError();
@@ -294,5 +290,4 @@ void mcm_cuda_blake2b_hash_batch(BYTE *key, WORD keylen, BYTE *in, WORD inlen, B
     }
     cudaFree(cuda_indata);
     cudaFree(cuda_outdata);
-}
 }

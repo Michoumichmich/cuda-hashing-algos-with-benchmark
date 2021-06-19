@@ -8,14 +8,11 @@
  */
  
  
-extern "C"
-{
-#include "keccak.cuh"
-}
 
-#define KECCAK_ROUND 24
-#define KECCAK_STATE_SIZE 25
-#define KECCAK_Q_SIZE 192
+#include "keccak.cuh"
+
+
+
 
 __constant__ LONG CUDA_KECCAK_CONSTS[24] = { 0x0000000000000001, 0x0000000000008082,
                                           0x800000000000808a, 0x8000000080008000, 0x000000000000808b, 0x0000000080000001, 0x8000000080008081,
@@ -333,9 +330,8 @@ __global__ void kernel_keccak_hash(BYTE* indata, WORD inlen, BYTE* outdata, WORD
     cuda_keccak_update(&ctx, in, inlen);
     cuda_keccak_final(&ctx, out);
 }
-extern "C"
-{
-void mcm_cuda_keccak_hash_batch(BYTE * in, WORD inlen, BYTE * out, WORD n_outbit, WORD n_batch)
+
+void mcm_cuda_keccak_hash_batch(BYTE * in, WORD inlen, BYTE * out, WORD n_outbit, WORD n_batch, WORD n_iter)
 {
     BYTE * cuda_indata;
     BYTE * cuda_outdata;
@@ -347,7 +343,9 @@ void mcm_cuda_keccak_hash_batch(BYTE * in, WORD inlen, BYTE * out, WORD n_outbit
     WORD thread = 256;
     WORD block = (n_batch + thread - 1) / thread;
 
-    kernel_keccak_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch, KECCAK_BLOCK_SIZE);
+    for(int i = 0 ; i < n_iter ; ++i)
+        kernel_keccak_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch, KECCAK_BLOCK_SIZE);
+    
     cudaMemcpy(out, cuda_outdata, KECCAK_BLOCK_SIZE * n_batch, cudaMemcpyDeviceToHost);
     cudaDeviceSynchronize();
     cudaError_t error = cudaGetLastError();
@@ -356,5 +354,4 @@ void mcm_cuda_keccak_hash_batch(BYTE * in, WORD inlen, BYTE * out, WORD n_outbit
     }
     cudaFree(cuda_indata);
     cudaFree(cuda_outdata);
-}
 }

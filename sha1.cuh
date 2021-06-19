@@ -15,4 +15,5 @@
  
 #pragma once
 #include "config.h"
-void mcm_cuda_sha1_hash_batch(BYTE* in, WORD inlen, BYTE* out, WORD n_batch);
+#define SHA1_BLOCK_SIZE 20     
+void mcm_cuda_sha1_hash_batch(BYTE* in, WORD inlen, BYTE* out, WORD n_batch, WORD n_iter=1);

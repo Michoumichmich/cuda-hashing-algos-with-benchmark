@@ -16,12 +16,12 @@
 /*************************** HEADER FILES ***************************/
 #include <stdlib.h>
 #include <memory.h>
-extern "C" {
+
 #include "sha1.cuh"
-}
+
 
 /****************************** MACROS ******************************/
-#define SHA1_BLOCK_SIZE 20              // SHA1 outputs a 20 byte digest
+         // SHA1 outputs a 20 byte digest
 
 /**************************** DATA TYPES ****************************/
 typedef struct {
@@ -183,9 +183,8 @@ __global__ void kernel_sha1_hash(BYTE* indata, WORD inlen, BYTE* outdata, WORD n
 	cuda_sha1_final(&ctx, out);
 }
 
-extern "C"
-{
-void mcm_cuda_sha1_hash_batch(BYTE* in, WORD inlen, BYTE* out, WORD n_batch)
+
+void mcm_cuda_sha1_hash_batch(BYTE* in, WORD inlen, BYTE* out, WORD n_batch, WORD n_iter)
 {
 	BYTE *cuda_indata;
 	BYTE *cuda_outdata;
@@ -196,7 +195,9 @@ void mcm_cuda_sha1_hash_batch(BYTE* in, WORD inlen, BYTE* out, WORD n_batch)
 	WORD thread = 256;
 	WORD block = (n_batch + thread - 1) / thread;
 
-	kernel_sha1_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch);
+	for(int i = 0 ; i < n_iter ; ++i)
+		kernel_sha1_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch);
+	
 	cudaMemcpy(out, cuda_outdata, SHA1_BLOCK_SIZE * n_batch, cudaMemcpyDeviceToHost);
 	cudaDeviceSynchronize();
 	cudaError_t error = cudaGetLastError();
@@ -206,4 +207,4 @@ void mcm_cuda_sha1_hash_batch(BYTE* in, WORD inlen, BYTE* out, WORD n_batch)
 	cudaFree(cuda_indata);
 	cudaFree(cuda_outdata);
 }
-}
+
