@@ -141,8 +141,8 @@ void mcm_cuda_md2_hash_batch(BYTE *in, WORD inlen, BYTE *out, WORD n_batch, WORD
 	cudaMalloc(&cuda_outdata, MD2_BLOCK_SIZE * n_batch);
 	cudaMemcpy(cuda_indata, in, inlen * n_batch, cudaMemcpyHostToDevice);
 
-	WORD thread = 256;
-	WORD block = (n_batch + thread - 1) / thread;
+    WORD thread = WG_SIZE;
+    WORD block = (n_batch / thread) + (n_batch % thread != 0);
 
 	for(int i = 0 ; i < n_iter ; ++i)
 		kernel_md2_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch);

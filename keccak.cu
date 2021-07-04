@@ -340,8 +340,8 @@ void mcm_cuda_keccak_hash_batch(BYTE * in, WORD inlen, BYTE * out, WORD n_outbit
     cudaMalloc(&cuda_outdata, KECCAK_BLOCK_SIZE * n_batch);
     cudaMemcpy(cuda_indata, in, inlen * n_batch, cudaMemcpyHostToDevice);
 
-    WORD thread = 256;
-    WORD block = (n_batch + thread - 1) / thread;
+    WORD thread = WG_SIZE;
+    WORD block = (n_batch / thread) + (n_batch % thread != 0);
 
     for(int i = 0 ; i < n_iter ; ++i)
         kernel_keccak_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch, KECCAK_BLOCK_SIZE);

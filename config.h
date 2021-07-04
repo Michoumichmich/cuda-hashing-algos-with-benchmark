@@ -23,3 +23,7 @@ typedef unsigned long long LONG;
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+
+
+
+#define WG_SIZE 64

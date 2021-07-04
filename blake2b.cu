@@ -276,8 +276,9 @@ void mcm_cuda_blake2b_hash_batch(BYTE *key, WORD keylen, BYTE *in, WORD inlen, B
     cudaMemcpy(cuda_indata, in, inlen * n_batch, cudaMemcpyHostToDevice);
     cudaMemcpyToSymbol(c_CTX, &ctx, sizeof(CUDA_BLAKE2B_CTX), 0, cudaMemcpyHostToDevice);
 
-    WORD thread = 256;
-    WORD block = (n_batch + thread - 1) / thread;
+    WORD thread = WG_SIZE;
+    WORD block = (n_batch / thread) + (n_batch % thread != 0);
+    
 
     for(int i = 0 ; i < n_iter ; ++i)
         kernel_blake2b_hash << < block, thread >> > (cuda_indata, inlen, cuda_outdata, n_batch, BLAKE2B_BLOCK_SIZE);
